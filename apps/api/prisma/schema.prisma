@@ -1,0 +1,325 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPER_ADMIN
+  STAFF
+}
+
+enum PassDuration {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  YEARLY
+}
+
+enum PassStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  UPI
+  CREDIT_CARD
+  DEBIT_CARD
+  NET_BANKING
+  WALLET
+  RAZORPAY
+  STRIPE
+}
+
+enum GovtIdType {
+  AADHAAR
+  PAN
+  PASSPORT
+  DRIVING_LICENSE
+  VOTER_ID
+}
+
+enum OtpType {
+  EMAIL_VERIFICATION
+  PHONE_VERIFICATION
+  PASSWORD_RESET
+  LOGIN
+}
+
+model User {
+  id                String       @id @default(uuid())
+  email             String       @unique
+  emailVerified     Boolean      @default(false)
+  phoneNumber       String       @unique
+  phoneVerified     Boolean      @default(false)
+  passwordHash      String
+  fullName          String
+  role              Role         @default(USER)
+  profilePhotoUrl   String?
+  address           String?
+  district          String?
+  state             String?
+  pincode           String?
+  emergencyContact  String?
+  govtIdType        GovtIdType?
+  govtIdNumber      String?
+  studentIdNumber   String?
+  employeeIdNumber  String?
+  isSuspended       Boolean      @default(false)
+  failedLoginCount  Int          @default(0)
+  lockedUntil       DateTime?
+  
+  bookings          Booking[]
+  busPasses         BusPass[]
+  payments          Payment[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  emailLogs         EmailLog[]
+  smsLogs           SmsLog[]
+  otps              OtpRecord[]
+  refreshTokens     RefreshToken[]
+  sessions          Session[]
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([email])
+  @@index([phoneNumber])
+}
+
+model Route {
+  id              String      @id @default(uuid())
+  routeCode       String      @unique
+  source          String
+  destination     String
+  viaStops        String[]
+  distanceKm      Float
+  baseMonthlyFare Float
+  isActive        Boolean     @default(true)
+  
+  bookings        Booking[]
+  busPasses       BusPass[]
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([source, destination])
+}
+
+model Booking {
+  id              String        @id @default(uuid())
+  userId          String
+  routeId         String
+  duration        PassDuration
+  passengerType   String        @default("GENERAL")
+  fareAmount      Float
+  status          PassStatus    @default(PENDING)
+  startDate       DateTime
+  expiryDate      DateTime
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  route           Route         @relation(fields: [routeId], references: [id])
+  busPass         BusPass?
+  payment         Payment?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([routeId])
+}
+
+model BusPass {
+  id               String        @id @default(uuid())
+  passNumber       String        @unique
+  userId           String
+  routeId          String
+  bookingId        String        @unique
+  duration         PassDuration
+  startDate        DateTime
+  expiryDate       DateTime
+  status           PassStatus    @default(PENDING)
+  fareAmount       Float
+  qrCodeData       String        @db.Text
+  barcodeData      String
+  verificationHash String
+  passengerName    String
+  passengerPhoto   String?
+  rejectionReason  String?
+
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  route            Route         @relation(fields: [routeId], references: [id])
+  booking          Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([passNumber])
+  @@index([userId])
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  bookingId       String        @unique
+  userId          String
+  transactionId   String        @unique
+  gatewayOrder    String
+  amount          Float
+  currency        String        @default("INR")
+  gateway         PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  paidAt          DateTime?
+  receiptUrl      String?
+
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoice         Invoice?
+  receipt         Receipt?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([transactionId])
+}
+
+model Invoice {
+  id            String    @id @default(uuid())
+  invoiceNumber String    @unique
+  paymentId     String    @unique
+  userId        String
+  amount        Float
+  taxAmount     Float
+  totalAmount   Float
+  pdfUrl        String?
+
+  payment       Payment   @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime  @default(now())
+}
+
+model Receipt {
+  id            String    @id @default(uuid())
+  receiptNumber String    @unique
+  paymentId     String    @unique
+  pdfUrl        String?
+
+  payment       Payment   @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime  @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  metadata  Json?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model OtpRecord {
+  id          String   @id @default(uuid())
+  userId      String?
+  identifier  String   // email or phone
+  otpHash     String
+  type        OtpType
+  expiresAt   DateTime
+  isUsed      Boolean  @default(false)
+  attempts    Int      @default(0)
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([identifier])
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  userId      String
+  tokenHash   String   @unique
+  familyId    String
+  isRevoked   Boolean  @default(false)
+  expiresAt   DateTime
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  ipAddress String
+  userAgent String
+  deviceInfo String?
+  lastActive DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  ipAddress String?
+  userAgent String?
+  details   Json?
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model EmailLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  recipient String
+  subject   String
+  status    String
+  error     String?
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model SmsLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  recipient String
+  message   String
+  status    String
+  error     String?
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}

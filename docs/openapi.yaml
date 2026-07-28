@@ -1,0 +1,1194 @@
+openapi: 3.0.3
+info:
+  title: Bus Pass Booking Platform API
+  version: 1.0.0
+  description: API for the Bus Pass Booking Platform
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Development server
+  - url: https://api.buspass.example.com
+    description: Production server
+security:
+  - bearerAuth: []
+  - cookieAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [USER, ADMIN, SUPER_ADMIN]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Admin:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [ADMIN, SUPER_ADMIN]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    SuperAdmin:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [SUPER_ADMIN]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Route:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        source:
+          type: string
+        destination:
+          type: string
+        distance:
+          type: number
+        baseFare:
+          type: number
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Bus:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        licensePlate:
+          type: string
+        model:
+          type: string
+        capacity:
+          type: integer
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Schedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        routeId:
+          type: string
+          format: uuid
+        busId:
+          type: string
+          format: uuid
+        departureTime:
+          type: string
+          format: date-time
+        arrivalTime:
+          type: string
+          format: date-time
+        availableSeats:
+          type: integer
+        price:
+          type: number
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        scheduleId:
+          type: string
+          format: uuid
+        passType:
+          type: string
+          enum: [DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY]
+        quantity:
+          type: integer
+        totalAmount:
+          type: number
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, CANCELLED, COMPLETED, REFUNDED]
+        paymentStatus:
+          type: string
+          enum: [PENDING, PAID, FAILED, REFUNDED]
+        bookedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    BusPass:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        bookingId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        passType:
+          type: string
+          enum: [DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY]
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        qrCode:
+          type: string
+          format: uri
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        bookingId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        currency:
+          type: string
+          enum: [INR, USD]
+        paymentMethod:
+          type: string
+          enum: [UPI, CREDIT_CARD, DEBIT_CARD, NET_BANKING, WALLET]
+        transactionId:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, SUCCESS, FAILED, REFUNDED]
+        paidAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        paymentId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        currency:
+          type: string
+          enum: [INR, USD]
+        type:
+          type: string
+          enum: [DEBIT, CREDIT, REFUND]
+        status:
+          type: string
+          enum: [SUCCESS, FAILED]
+        createdAt:
+          type: string
+          format: date-time
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        bookingId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        currency:
+          type: string
+          enum: [INR, USD]
+        invoiceNumber:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        dueDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [DRAFT, SENT, PAID, OVERDUE, CANCELLED]
+    Receipt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        paymentId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        currency:
+          type: string
+          enum: [INR, USD]
+        receiptNumber:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [GENERATED, SENT]
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        adminId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        message:
+          type: string
+        type:
+          type: string
+          enum: [INFO, WARNING, ERROR, SUCCESS]
+        channel:
+          type: string
+          enum: [IN_APP, EMAIL, SMS, PUSH]
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    EmailLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        notificationId:
+          type: string
+          format: uuid
+        recipient:
+          type: string
+          format: email
+        subject:
+          type: string
+        body:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, SENT, FAILED, BOUNCED]
+        sentAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    SMSLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        notificationId:
+          type: string
+          format: uuid
+        recipient:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, SENT, FAILED, DELIVERED]
+        sentAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    PushNotificationLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        notificationId:
+          type: string
+          format: uuid
+        recipient:
+          type: string
+          format: uuid
+        title:
+          type: string
+        body:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, SENT, FAILED, DELIVERED, CLICKED]
+        sentAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    OTP:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        adminId:
+          type: string
+          format: uuid
+        otp:
+          type: string
+        purpose:
+          type: string
+          enum: [LOGIN, PASSWORD_RESET, EMAIL_VERIFICATION, PHONE_VERIFICATION, TRANSACTION_VERIFICATION]
+        expiresAt:
+          type: string
+          format: date-time
+        isUsed:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    RefreshToken:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        adminId:
+          type: string
+          format: uuid
+        token:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        isRevoked:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        adminId:
+          type: string
+          format: uuid
+        token:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        adminId:
+          type: string
+          format: uuid
+        action:
+          type: string
+        entity:
+          type: string
+        entityId:
+          type: string
+          format: uuid
+        changes:
+          type: object
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    ActivityLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        adminId:
+          type: string
+          format: uuid
+        action:
+          type: string
+        entity:
+          type: string
+        entityId:
+          type: string
+          format: uuid
+        description:
+          type: string
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    File:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        adminId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        fileSize:
+          type: number
+        mimeType:
+          type: string
+        url:
+          type: string
+          format: uri
+        uploadedAt:
+          type: string
+          format: date-time
+    Settings:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type: string
+        value:
+          type: string
+        description:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+        updatedBy:
+          type: string
+          format: uuid
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegisterRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Bad request
+        '409':
+          description: User already exists
+        '500':
+          description: Internal server error
+  /auth/login:
+    post:
+      summary: Login user
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+        '500':
+          description: Internal server error
+  /auth/logout:
+    post:
+      summary: Logout user
+      operationId: logoutUser
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Logout successful
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /auth/refresh-token:
+    post:
+      summary: Refresh access token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid or expired refresh token
+        '500':
+          description: Internal server error
+  /users/me:
+    get:
+      summary: Get current user profile
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /users/me:
+    put:
+      summary: Update user profile
+      operationId: updateUserProfile
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: User profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /routes:
+    get:
+      summary: Get all routes
+      operationId: getRoutes
+      responses:
+        '200':
+          description: List of routes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Route'
+        '500':
+          description: Internal server error
+  /routes/{routeId}:
+    get:
+      summary: Get route by ID
+      operationId: getRouteById
+      parameters:
+        - in: path
+          name: routeId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Route details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Route'
+        '404':
+          description: Route not found
+        '500':
+          description: Internal server error
+  /schedules:
+    get:
+      summary: Get schedules (with optional filters)
+      operationId: getSchedules
+      parameters:
+        - in: query
+          name: routeId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: availableSeats
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of schedules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Schedule'
+        '500':
+          description: Internal server error
+  /bookings:
+    post:
+      summary: Create a booking
+      operationId: createBooking
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCreateRequest'
+      responses:
+        '201':
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '402':
+          description: Payment required
+        '500':
+          description: Internal server error
+  /bookings/{bookingId}:
+    get:
+      summary: Get booking by ID
+      operationId: getBookingById
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '404':
+          description: Booking not found
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /bookings/{bookingId}/cancel:
+    post:
+      summary: Cancel a booking
+      operationId: cancelBooking
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+  /passes:
+    get:
+      summary: Get user's bus passes
+      operationId: getUserPasses
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of bus passes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BusPass'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /passes/{passId}/verify:
+    post:
+      summary: Verify a bus pass (for admin/super admin)
+      operationId: verifyPass
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: passId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Pass verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassVerificationResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Pass not found
+        '500':
+          description: Internal server error
+  /payments/webhook:
+    post:
+      summary: Payment webhook (Razorpay/Stripe)
+      operationId: paymentWebhook
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentWebhookRequest'
+      responses:
+        '200':
+          description: Webhook processed successfully
+        '400':
+          description: Invalid webhook payload
+        '500':
+          description: Internal server error
+  /notifications:
+    get:
+      summary: Get user notifications
+      operationId: getNotifications
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: unreadOnly
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /notifications/{notificationId}/read:
+    post:
+      summary: Mark notification as read
+      operationId: markNotificationAsRead
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: notificationId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification marked as read
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+        '500':
+          description: Internal server error
+  /admin/stats:
+    get:
+      summary: Get admin dashboard statistics
+      operationId: getAdminStats
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStatsResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+  /admin/reports:
+    get:
+      summary: Generate report
+      operationId: generateReport
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [BOOKINGS, PAYMENTS, USERS, REVENUE]
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Report generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+components:
+  schemas:
+    UserRegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          format: password
+        phone:
+          type: string
+          pattern: ^\+?[0-9]{10,15}$
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+    BookingCreateRequest:
+      type: object
+      required:
+        - scheduleId
+        - passType
+        - quantity
+      properties:
+        scheduleId:
+          type: string
+          format: uuid
+        passType:
+          type: string
+          enum: [DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY]
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 10
+    PassVerificationResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        user:
+          $ref: '#/components/schemas/User'
+        pass:
+          $ref: '#/components/schemas/BusPass'
+        message:
+          type: string
+    AdminStatsResponse:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalAdmins:
+          type: integer
+        totalSuperAdmins:
+          type: integer
+        totalBookings:
+          type: integer
+        totalRevenue:
+          type: number
+        totalActivePasses:
+          type: integer
+        totalRoutes:
+          type: integer
+        totalBuses:
+          type: integer
+    ReportResponse:
+      type: object
+      properties:
+        reportUrl:
+          type: string
+          format: uri
+        generatedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+    PaymentWebhookRequest:
+      type: object
+      properties:
+        event:
+          type: string
+        payload:
+          type: object
+        signature:
+          type: string
+```

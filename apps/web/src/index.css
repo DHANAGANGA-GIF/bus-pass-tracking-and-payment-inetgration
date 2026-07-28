@@ -1,0 +1,55 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@layer base {
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+  }
+
+  body {
+    @apply bg-slate-950 text-slate-100 font-sans antialiased min-h-screen selection:bg-blue-500 selection:text-white;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(147, 51, 234, 0.15) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  @apply backdrop-blur-xl bg-slate-900/60 border border-slate-800/80 shadow-2xl rounded-2xl;
+}
+
+.glass-card {
+  @apply backdrop-blur-md bg-slate-900/40 border border-slate-800/60 hover:border-blue-500/40 transition-all duration-300 rounded-xl;
+}
+
+.glass-input {
+  @apply bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-lg px-4 py-2.5 outline-none transition-all;
+}
+
+.glass-btn-primary {
+  @apply bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium px-5 py-2.5 rounded-lg shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all duration-300 active:scale-[0.98];
+}
+
+.glass-btn-secondary {
+  @apply backdrop-blur-md bg-slate-800/60 hover:bg-slate-800 border border-slate-700 text-slate-200 font-medium px-5 py-2.5 rounded-lg transition-all active:scale-[0.98];
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #090d16;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
