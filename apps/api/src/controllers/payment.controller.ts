@@ -142,7 +142,7 @@ export async function verifyPayment(req: Request, res: Response) {
     const invoiceNumber = `INV-${new Date().getFullYear()}-${payment.id.slice(0, 8)}`;
     const receiptNumber = `RCPT-${Date.now()}-${payment.id}`;
 
-    await prisma.$transaction(async (tx: Parameters<typeof prisma.$transaction>[0]) => {
+    await prisma.$transaction(async (tx) => {
       await tx.payment.update({
         where: { id: payment.id },
         data: { status: 'SUCCESS', paidAt: new Date() }
