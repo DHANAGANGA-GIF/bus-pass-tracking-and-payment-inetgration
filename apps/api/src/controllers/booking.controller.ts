@@ -36,7 +36,7 @@ export async function createBooking(req: AuthenticatedRequest, res: Response) {
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
 
     // Atomic Booking & Digital Bus Pass Creation
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: PrismaClient) => {
       const booking = await tx.booking.create({
         data: {
           userId: req.user!.id,

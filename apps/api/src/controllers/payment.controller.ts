@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '../config/db.js';
+import { prisma, PrismaClient } from '../config/db.js';
 import { InitializePaymentSchema, VerifyPaymentSchema } from '@bus-pass/shared';
 import { env } from '../config/env.js';
 import Razorpay from 'razorpay';
@@ -142,7 +142,7 @@ export async function verifyPayment(req: Request, res: Response) {
     const invoiceNumber = `INV-${new Date().getFullYear()}-${payment.id.slice(0, 8)}`;
     const receiptNumber = `RCPT-${Date.now()}-${payment.id}`;
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: PrismaClient) => {
       await tx.payment.update({
         where: { id: payment.id },
         data: { status: 'SUCCESS', paidAt: new Date() }
