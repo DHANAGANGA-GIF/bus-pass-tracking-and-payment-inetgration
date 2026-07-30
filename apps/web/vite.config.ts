@@ -51,7 +51,7 @@ export default defineConfig({
       '@bus-pass/shared': path.resolve(__dirname, '../../packages/shared/dist/index.js'),
       'react-transition-group': path.resolve(rootPath, 'node_modules/react-transition-group/esm/index.js'),
       'dom-helpers': path.resolve(rootPath, 'node_modules/dom-helpers/esm'),
-      'react-smooth': path.resolve(rootPath, 'node_modules/react-smooth/esm/index.js')
+      'react-smooth': path.resolve(rootPath, 'node_modules/react-smooth/es6/index.js')
     }
   },
   build: {
