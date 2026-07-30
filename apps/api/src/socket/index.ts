@@ -1,13 +1,18 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { Server as HttpServer } from 'node:http';
 import { logger } from '../utils/logger.js';
+import { env } from '../config/env.js';
 
 let io: SocketIOServer | null = null;
 
 export function initSocketIO(server: HttpServer) {
+  const allowedOrigins = env.CORS_ORIGIN
+    ? env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+    : [env.FRONTEND_URL, 'http://localhost:3000'];
+
   io = new SocketIOServer(server, {
     cors: {
-      origin: '*',
+      origin: allowedOrigins,
       methods: ['GET', 'POST']
     }
   });

@@ -13,10 +13,23 @@ const server = createServer(app);
 
 initSocketIO(server);
 
+// Build allowed origins from CORS_ORIGIN env var (comma-separated) or FRONTEND_URL
+const allowedOrigins: string[] = env.CORS_ORIGIN
+  ? env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+  : [env.FRONTEND_URL, 'http://localhost:3000', 'http://localhost:5000'];
+
 app.use(helmet());
 app.use(
   cors({
-    origin: '*',
+    origin: (origin, callback) => {
+      // Allow non-browser requests (e.g., curl, Postman, server-to-server) and allowed origins
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        logger.warn(`[CORS] Blocked request from origin: ${origin}`);
+        callback(new Error(`CORS policy: Origin '${origin}' is not allowed.`));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
   })

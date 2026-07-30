@@ -15,6 +15,8 @@ import { emitToAdmin } from '../socket/index.js';
 import { auditLogger, AuthenticatedRequest } from '../middlewares/auth.middleware.js';
 import { RegisterSchema, LoginSchema, SendOtpSchema, VerifyOtpSchema, ResetPasswordSchema } from '@bus-pass/shared';
 import passport from '../middleware/passport.js';
+import { env } from '../config/env.js';
+
 
 export async function register(req: Request, res: Response) {
   try {
@@ -394,31 +396,35 @@ export async function getCurrentUser(req: AuthenticatedRequest, res: Response) {
 export const googleLogin = passport.authenticate('google', { scope: ['profile', 'email'] });
 
 export const googleCallback = (req: Request, res: Response, next: NextFunction) => {
-  passport.authenticate('google', { failureRedirect: '/login' }, (err: any, user: any, info: any) => {
+  passport.authenticate('google', { session: false }, (err: any, user: any, info: any) => {
     if (err) {
-      return next(err);
+      return res.redirect(`${env.FRONTEND_URL}/login?error=oauth_error`);
     }
     if (!user) {
-      return res.redirect('/login');
+      return res.redirect(`${env.FRONTEND_URL}/login?error=oauth_failed`);
     }
     
-    // Set tokens in HTTP-only cookies
+    // Set tokens in HTTP-only cookies (secure in production, lax sameSite for cross-origin redirect)
     res.cookie('accessToken', user.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: env.NODE_ENV === 'production',
+      sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 15 * 60 * 1000 // 15 minutes
     });
     
     res.cookie('refreshToken', user.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: env.NODE_ENV === 'production',
+      sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
     
-    // Redirect to frontend dashboard
-    res.redirect('/dashboard');
+    // Redirect to frontend dashboard using absolute URL
+    // Tokens are passed as URL params (short-lived); the SPA stores them in localStorage and
+    // immediately cleans the URL. This is necessary for cross-domain OAuth flows.
+    res.redirect(
+      `${env.FRONTEND_URL}/dashboard?accessToken=${encodeURIComponent(user.accessToken)}&refreshToken=${encodeURIComponent(user.refreshToken)}`
+    );
   })(req, res, next);
 };
 

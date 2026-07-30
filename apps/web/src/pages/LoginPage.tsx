@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { api } from '../lib/api';
@@ -11,6 +11,17 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Handle OAuth error redirect (e.g., ?error=oauth_failed)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthError = params.get('error');
+    if (oauthError) {
+      setError('Google sign-in failed. Please try again or use email/password.');
+      window.history.replaceState({}, document.title, '/login');
+    }
+  }, []);
+
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

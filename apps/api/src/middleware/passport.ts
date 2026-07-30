@@ -5,12 +5,20 @@ import { prisma } from '../config/db.js';
 import { generateAccessToken, generateRefreshToken, hashToken, hashPassword } from '../utils/security.js';
 import { env } from '../config/env.js';
 
+if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+  throw new Error(
+    '[Startup Error] GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set in environment variables. ' +
+    'Google OAuth will not work without real credentials. ' +
+    'See docs/google-oauth-setup.md for setup instructions.'
+  );
+}
+
 passport.use(
   new GoogleStrategy(
     {
-      clientID: env.GOOGLE_CLIENT_ID || 'dummy_client_id',
-      clientSecret: env.GOOGLE_CLIENT_SECRET || 'dummy_client_secret',
-      callbackURL: '/api/auth/google/callback',
+      clientID: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+      callbackURL: env.GOOGLE_CALLBACK_URL,
       scope: ['profile', 'email']
     },
     async (accessToken, refreshToken, profile, done) => {

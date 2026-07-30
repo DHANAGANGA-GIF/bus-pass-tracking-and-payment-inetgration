@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/useAuthStore';
 import { Booking } from '@bus-pass/shared';
@@ -6,13 +7,28 @@ import { Bus, Calendar, Download, RefreshCw, Ticket, CheckCircle2, Clock, AlertC
 import jsPDF from 'jspdf';
 
 export const UserDashboardPage: React.FC = () => {
-  const { user } = useAuthStore();
+  const navigate = useNavigate();
+  const { user, setTokens, fetchCurrentUser } = useAuthStore();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Handle OAuth token injection from URL params (Google OAuth callback)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const accessToken = params.get('accessToken');
+    const refreshToken = params.get('refreshToken');
+    if (accessToken && refreshToken) {
+      setTokens(accessToken, refreshToken);
+      // Strip sensitive tokens from URL immediately
+      window.history.replaceState({}, document.title, '/dashboard');
+      fetchCurrentUser();
+    }
+  }, []);
 
   useEffect(() => {
     fetchBookings();
   }, []);
+
 
   const fetchBookings = async () => {
     try {
