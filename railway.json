@@ -1,0 +1,25 @@
+{
+  "services": [
+    {
+      "name": "api",
+      "dockerfile": "Dockerfile.api",
+      "plan": "free"
+    },
+    {
+      "name": "web",
+      "dockerfile": "Dockerfile.web",
+      "plan": "free"
+    }
+  ],
+  "databases": [
+    {
+      "name": "buspass-db",
+      "postgres": 15,
+      "plan": "free"
+    }
+  ],
+  "redis": {
+    "name": "buspass-redis",
+    "plan": "free"
+  }
+}
