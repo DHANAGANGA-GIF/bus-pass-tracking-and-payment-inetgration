@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma, PrismaClient } from '../config/db.js';
+import { prisma } from '../config/db.js';
 import { InitializePaymentSchema, VerifyPaymentSchema } from '@bus-pass/shared';
 import { env } from '../config/env.js';
 import Razorpay from 'razorpay';
@@ -7,6 +7,7 @@ import crypto from 'crypto';
 import { logger } from '../utils/logger.js';
 import { sendEmail, getEmailTemplate } from '../services/notification.service.js';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware.js';
+import type { PrismaClient } from '@prisma/client';
 
 const razorpay = new Razorpay({
   key_id: env.RAZORPAY_KEY_ID,
