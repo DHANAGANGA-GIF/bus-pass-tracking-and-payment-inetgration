@@ -66,8 +66,7 @@ export default defineConfig({
           'vendor-lucide': ['lucide-react'],
           'vendor-recharts': ['recharts']
         }
-      },
-      emptyOutDir: true
+      }
     }
   },
   server: {

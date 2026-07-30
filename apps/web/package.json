@@ -12,7 +12,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@bus-pass/shared": "workspace:*",
+    "@bus-pass/shared": "1.0.0",
     "@hookform/resolvers": "^3.10.0",
     "axios": "^1.7.9",
     "clsx": "^2.1.1",
