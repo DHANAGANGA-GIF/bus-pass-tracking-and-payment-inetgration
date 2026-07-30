@@ -6,13 +6,14 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { logger } from '../utils/logger.js';
 import { sendEmail, getEmailTemplate } from '../services/notification.service.js';
+import { AuthenticatedRequest } from '../middlewares/auth.middleware.js';
 
 const razorpay = new Razorpay({
   key_id: env.RAZORPAY_KEY_ID,
   key_secret: env.RAZORPAY_KEY_SECRET
 });
 
-export async function initializePayment(req: Request, res: Response) {
+export async function initializePayment(req: AuthenticatedRequest, res: Response) {
   try {
     const validated = InitializePaymentSchema.parse(req.body);
     
@@ -125,7 +126,7 @@ export async function verifyPayment(req: Request, res: Response) {
       const isValid = validateRazorpaySignature(
         validated.orderId,
         validated.paymentId,
-        validated.signature
+        validated.signature || ''
       );
 
       if (!isValid) {
@@ -154,7 +155,7 @@ export async function verifyPayment(req: Request, res: Response) {
 
       if (payment.booking?.busPass) {
         await tx.busPass.update({
-          where: { id: payment.booking?.busPass.id },
+          where: { id: payment.booking.busPass.id },
           data: { status: 'ACTIVE' }
         });
       }
@@ -245,8 +246,9 @@ export async function razorpayWebhook(req: Request, res: Response) {
       const orderId = paymentEntity.order_id;
       const paymentId = paymentEntity.id;
 
-      const payment = await prisma.payment.findFirst({
-        where: { gatewayOrder: orderId }
+const payment = await prisma.payment.findFirst({
+        where: { gatewayOrder: orderId },
+        include: { booking: { include: { busPass: true } } }
       });
 
       if (payment && payment.status === 'PENDING') {
@@ -262,7 +264,7 @@ export async function razorpayWebhook(req: Request, res: Response) {
 
         if (payment.booking?.busPass) {
           await prisma.busPass.update({
-            where: { id: payment.booking?.busPass.id },
+            where: { id: payment.booking.busPass.id },
             data: { status: 'ACTIVE' }
           });
         }

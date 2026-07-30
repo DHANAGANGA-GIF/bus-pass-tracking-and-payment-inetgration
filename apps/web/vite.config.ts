@@ -49,11 +49,33 @@ export default defineConfig({
       '@bus-pass/shared': path.resolve(__dirname, '../../packages/shared/dist/index.js')
     }
   },
+  publicDir: 'public',
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-lucide': ['lucide-react'],
+          'vendor-recharts': ['recharts']
+        }
+      }
+    }
+  },
   server: {
     port: 3000,
+    host: '0.0.0.0',
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
+        changeOrigin: true
+      },
+      '/socket.io': {
+        target: 'http://localhost:5000',
+        ws: true,
         changeOrigin: true
       }
     }
