@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import QRCode from 'qrcode';
 import crypto from 'node:crypto';
-import { prisma } from '../config/db.js';
+import { prisma, PrismaClient } from '../config/db.js';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware.js';
 import { CreateBookingSchema, DURATION_DISCOUNTS, DURATION_DAYS, PassDuration } from '@bus-pass/shared';
 import { generateHmacSignature } from '../utils/security.js';
