@@ -46,7 +46,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@bus-pass/shared': path.resolve(__dirname, '../../packages/shared/dist/index.js')
+      '@bus-pass/shared': path.resolve(__dirname, '../../packages/shared/dist/index.js'),
+      // Workaround for # in path on Windows
+      domHelpers: path.resolve(__dirname, '../../node_modules/dom-helpers/esm')
     }
   },
   publicDir: 'public',
