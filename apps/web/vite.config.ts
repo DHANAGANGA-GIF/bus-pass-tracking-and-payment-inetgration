@@ -1,12 +1,12 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 
 function hashPathResolver() {
   return {
     name: 'hash-path-resolver',
-    resolveId(source: string, importer: string | undefined) {
+    resolveId(source, importer) {
       if (source === '@bus-pass/shared') {
         const sharedDist = path.resolve(__dirname, '../../packages/shared/dist/index.js');
         if (fs.existsSync(sharedDist)) return sharedDist;
@@ -41,17 +41,19 @@ function hashPathResolver() {
   };
 }
 
+const rootPath = path.resolve(__dirname, '../../');
+
 export default defineConfig({
   plugins: [hashPathResolver(), react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@bus-pass/shared': path.resolve(__dirname, '../../packages/shared/dist/index.js'),
-      // Workaround for # in path on Windows
-      domHelpers: path.resolve(__dirname, '../../node_modules/dom-helpers/esm')
+      'react-transition-group': path.resolve(rootPath, 'node_modules/react-transition-group/esm/index.js'),
+      'dom-helpers': path.resolve(rootPath, 'node_modules/dom-helpers/esm'),
+      'react-smooth': path.resolve(rootPath, 'node_modules/react-smooth/esm/index.js')
     }
   },
-  publicDir: 'public',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -64,7 +66,8 @@ export default defineConfig({
           'vendor-lucide': ['lucide-react'],
           'vendor-recharts': ['recharts']
         }
-      }
+      },
+      emptyOutDir: true
     }
   },
   server: {
@@ -81,5 +84,8 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  optimizeDeps: {
+    include: ['react-transition-group']
   }
 });
