@@ -117,7 +117,10 @@ async function main() {
     await prisma.route.upsert({
       where: { routeCode: r.routeCode },
       update: {},
-      create: r
+      create: {
+        ...r,
+        viaStops: JSON.stringify(r.viaStops)
+      }
     });
   }
   console.log('✅ Created 4 High-Volume Bus Routes');

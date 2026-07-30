@@ -2,6 +2,19 @@ import { Request, Response } from 'express';
 import { prisma } from '../config/db.js';
 import { CreateRouteSchema } from '@bus-pass/shared';
 
+function parseViaStops(route: any) {
+  if (!route) return route;
+  let stops = route.viaStops;
+  if (typeof stops === 'string') {
+    try {
+      stops = JSON.parse(stops);
+    } catch {
+      stops = stops.split(',').map((s: string) => s.trim());
+    }
+  }
+  return { ...route, viaStops: stops };
+}
+
 export async function getRoutes(req: Request, res: Response) {
   try {
     const { source, destination, search } = req.query;
@@ -9,16 +22,16 @@ export async function getRoutes(req: Request, res: Response) {
     const whereClause: any = { isActive: true };
 
     if (source) {
-      whereClause.source = { contains: String(source), mode: 'insensitive' };
+      whereClause.source = { contains: String(source) };
     }
     if (destination) {
-      whereClause.destination = { contains: String(destination), mode: 'insensitive' };
+      whereClause.destination = { contains: String(destination) };
     }
     if (search) {
       whereClause.OR = [
-        { routeCode: { contains: String(search), mode: 'insensitive' } },
-        { source: { contains: String(search), mode: 'insensitive' } },
-        { destination: { contains: String(search), mode: 'insensitive' } }
+        { routeCode: { contains: String(search) } },
+        { source: { contains: String(search) } },
+        { destination: { contains: String(search) } }
       ];
     }
 
@@ -29,7 +42,7 @@ export async function getRoutes(req: Request, res: Response) {
 
     return res.status(200).json({
       success: true,
-      data: routes
+      data: routes.map(parseViaStops)
     });
   } catch (error: any) {
     return res.status(500).json({ success: false, message: error.message || 'Failed to fetch routes.' });
@@ -45,7 +58,7 @@ export async function getRouteById(req: Request, res: Response) {
       return res.status(404).json({ success: false, message: 'Route not found.' });
     }
 
-    return res.status(200).json({ success: true, data: route });
+    return res.status(200).json({ success: true, data: parseViaStops(route) });
   } catch (error: any) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -61,13 +74,16 @@ export async function createRoute(req: Request, res: Response) {
     }
 
     const route = await prisma.route.create({
-      data: validated
+      data: {
+        ...validated,
+        viaStops: Array.isArray(validated.viaStops) ? JSON.stringify(validated.viaStops) : String(validated.viaStops)
+      }
     });
 
     return res.status(201).json({
       success: true,
       message: 'Route created successfully.',
-      data: route
+      data: parseViaStops(route)
     });
   } catch (error: any) {
     return res.status(400).json({ success: false, message: error.message || 'Failed to create route.' });
@@ -77,15 +93,19 @@ export async function createRoute(req: Request, res: Response) {
 export async function updateRoute(req: Request, res: Response) {
   try {
     const id = req.params.id as string;
+    const updateData = { ...req.body };
+    if (updateData.viaStops && Array.isArray(updateData.viaStops)) {
+      updateData.viaStops = JSON.stringify(updateData.viaStops);
+    }
     const route = await prisma.route.update({
       where: { id },
-      data: req.body
+      data: updateData
     });
 
     return res.status(200).json({
       success: true,
       message: 'Route updated successfully.',
-      data: route
+      data: parseViaStops(route)
     });
   } catch (error: any) {
     return res.status(400).json({ success: false, message: error.message || 'Failed to update route.' });

@@ -1,15 +1,24 @@
 import { Request, Response } from 'express';
-import crypto from 'node:crypto';
 import { prisma } from '../config/db.js';
-import { AuthenticatedRequest } from '../middlewares/auth.middleware.js';
 import { InitializePaymentSchema, VerifyPaymentSchema } from '@bus-pass/shared';
 import { env } from '../config/env.js';
-import { emitToUser, emitToAdmin } from '../socket/index.js';
+import Razorpay from 'razorpay';
+import crypto from 'crypto';
+import { logger } from '../utils/logger.js';
 import { sendEmail, getEmailTemplate } from '../services/notification.service.js';
 
-export async function initializePayment(req: AuthenticatedRequest, res: Response) {
+const razorpay = new Razorpay({
+  key_id: env.RAZORPAY_KEY_ID,
+  key_secret: env.RAZORPAY_KEY_SECRET
+});
+
+export async function initializePayment(req: Request, res: Response) {
   try {
     const validated = InitializePaymentSchema.parse(req.body);
+    
+    if (validated.amount <= 0) {
+      return res.status(400).json({ success: false, message: 'Payment amount must be greater than 0' });
+    }
 
     const booking = await prisma.booking.findUnique({
       where: { id: validated.bookingId },
@@ -17,10 +26,22 @@ export async function initializePayment(req: AuthenticatedRequest, res: Response
     });
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking record not found.' });
+      return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
-    const transactionId = `TXN-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    const existingPayment = await prisma.payment.findFirst({
+      where: { bookingId: booking.id }
+    });
+
+    if (existingPayment) {
+      return res.status(409).json({
+        success: false,
+        message: 'Duplicate payment request',
+        data: { paymentId: existingPayment.id }
+      });
+    }
+
+    const transactionId = `PAY-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
     const gatewayOrder = `ORD-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 
     const payment = await prisma.payment.create({
@@ -36,90 +57,132 @@ export async function initializePayment(req: AuthenticatedRequest, res: Response
       }
     });
 
+    if (validated.gateway === 'RAZORPAY') {
+      const order = await razorpay.orders.create({
+        amount: Math.round(validated.amount * 100),
+        currency: 'INR',
+        receipt: transactionId,
+        notes: {
+          bookingId: booking.id,
+          userId: req.user!.id
+        }
+      });
+
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { gatewayOrder: order.id }
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Razorpay order created successfully',
+        data: {
+          paymentId: payment.id,
+          orderId: order.id,
+          amount: validated.amount,
+          currency: 'INR',
+          key: env.RAZORPAY_KEY_ID,
+          description: `Bus Pass for route ${booking.routeId}`
+        }
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      message: 'Payment initialized successfully.',
+      message: 'Payment initialized',
       data: {
         paymentId: payment.id,
-        transactionId: payment.transactionId,
-        gatewayOrder: payment.gatewayOrder,
-        amount: payment.amount,
-        currency: payment.currency,
-        key: env.RAZORPAY_KEY_ID
+        transactionId,
+        gatewayOrder,
+        amount: validated.amount,
+        currency: 'INR'
       }
     });
   } catch (error: any) {
-    return res.status(400).json({ success: false, message: error.message || 'Payment initialization failed.' });
+    logger.error(`Payment initialization error: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Payment initialization failed',
+      details: error.message
+    });
   }
 }
 
-export async function verifyPayment(req: AuthenticatedRequest, res: Response) {
+export async function verifyPayment(req: Request, res: Response) {
   try {
     const validated = VerifyPaymentSchema.parse(req.body);
 
     const payment = await prisma.payment.findUnique({
       where: { id: validated.paymentId },
-      include: { booking: true, user: true }
+      include: { booking: { include: { route: true, busPass: true } }, user: true }
     });
 
     if (!payment) {
-      return res.status(404).json({ success: false, message: 'Payment record not found.' });
+      return res.status(404).json({ success: false, message: 'Payment not found' });
     }
 
-    // Atomic update payment, booking, bus pass, and generate invoice
-    const invoiceNumber = `INV-${new Date().getFullYear()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-    const taxAmount = payment.amount * 0.18; // 18% GST
-    const totalAmount = payment.amount + taxAmount;
+    if (payment.gateway === 'RAZORPAY') {
+      const isValid = validateRazorpaySignature(
+        validated.orderId,
+        validated.paymentId,
+        validated.signature
+      );
+
+      if (!isValid) {
+        return res.status(400).json({ success: false, message: 'Invalid payment signature' });
+      }
+
+      const order = await razorpay.orders.fetch(validated.orderId);
+      if (order.status !== 'paid') {
+        return res.status(400).json({ success: false, message: 'Payment not completed' });
+      }
+    }
+
+    const invoiceNumber = `INV-${new Date().getFullYear()}-${payment.id.slice(0, 8)}`;
+    const receiptNumber = `RCPT-${Date.now()}-${payment.id}`;
 
     await prisma.$transaction(async (tx) => {
-      // 1. Update Payment status
       await tx.payment.update({
         where: { id: payment.id },
         data: { status: 'SUCCESS', paidAt: new Date() }
       });
 
-      // 2. Update Booking & Bus Pass status to APPROVED / ACTIVE
       await tx.booking.update({
         where: { id: payment.bookingId },
         data: { status: 'APPROVED' }
       });
 
-      await tx.busPass.update({
-        where: { bookingId: payment.bookingId },
-        data: { status: 'ACTIVE' }
-      });
+      if (payment.booking?.busPass) {
+        await tx.busPass.update({
+          where: { id: payment.booking?.busPass.id },
+          data: { status: 'ACTIVE' }
+        });
+      }
 
-      // 3. Create Invoice Record
       await tx.invoice.create({
         data: {
           invoiceNumber,
           paymentId: payment.id,
           userId: payment.userId,
           amount: payment.amount,
-          taxAmount,
-          totalAmount
+          taxAmount: payment.amount * 0.18,
+          totalAmount: payment.amount * 1.18
+        }
+      });
+
+      await tx.receipt.create({
+        data: {
+          receiptNumber,
+          paymentId: payment.id,
+          pdfUrl: `/receipts/${receiptNumber}.pdf`
         }
       });
     });
 
-    // Notify User & Admin via Socket.IO
-    emitToUser(payment.userId, 'payment_success', {
-      transactionId: payment.transactionId,
-      amount: totalAmount,
-      invoiceNumber
-    });
-
-    emitToAdmin('payment_received', {
-      transactionId: payment.transactionId,
-      user: payment.user.fullName,
-      amount: totalAmount
-    });
-
-    // Send Payment Success Email
     const emailHtml = getEmailTemplate(
       'Payment Successful - Bus Pass Activated!',
-      `<p>Hello <strong>${payment.user.fullName}</strong>,</p>
-       <p>We have successfully received your payment of <strong>₹${totalAmount.toFixed(2)}</strong> (Incl. GST).</p>
+      `<p>Hello <strong>${payment.user?.fullName || 'Customer'}</strong>,</p>
+       <p>We have successfully received your payment of <strong>₹${(payment.amount * 1.18).toFixed(2)}</strong> (Incl. GST).</p>
        <ul>
          <li><strong>Transaction ID:</strong> ${payment.transactionId}</li>
          <li><strong>Invoice Number:</strong> ${invoiceNumber}</li>
@@ -127,7 +190,7 @@ export async function verifyPayment(req: AuthenticatedRequest, res: Response) {
        </ul>
        <p>Your digital bus pass is now <strong>ACTIVE</strong> and ready to use!</p>`
     );
-    sendEmail(payment.user.email, `Payment Receipt: ${payment.transactionId}`, emailHtml);
+    await sendEmail(payment.user?.email || '', `Payment Receipt: ${payment.transactionId}`, emailHtml);
 
     return res.status(200).json({
       success: true,
@@ -135,10 +198,96 @@ export async function verifyPayment(req: AuthenticatedRequest, res: Response) {
       data: {
         transactionId: payment.transactionId,
         invoiceNumber,
+        receiptNumber,
         status: 'SUCCESS'
       }
     });
   } catch (error: any) {
-    return res.status(400).json({ success: false, message: error.message || 'Payment verification failed.' });
+    logger.error(`Payment verification error: ${error.message}`);
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Payment verification failed',
+      details: error.stack
+    });
   }
+}
+
+export async function razorpayWebhook(req: Request, res: Response) {
+  try {
+    const secret = env.RAZORPAY_WEBHOOK_SECRET;
+    const signature = req.headers['x-razorpay-signature'] as string;
+
+    if (!signature) {
+      return res.status(400).json({ success: false, message: 'Missing signature header' });
+    }
+
+    const body = JSON.stringify(req.body);
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(body)
+      .digest('hex');
+
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expectedSignature)
+    );
+
+    if (!isValid) {
+      logger.warn('Invalid Razorpay webhook signature');
+      return res.status(400).json({ success: false, message: 'Invalid signature' });
+    }
+
+    const event = req.body;
+    logger.info(`Received Razorpay webhook: ${event.event}`);
+
+    if (event.event === 'payment.captured' || event.event === 'order.paid') {
+      const paymentEntity = event.payload.payment?.entity || event.payload.order?.entity;
+      const orderId = paymentEntity.order_id;
+      const paymentId = paymentEntity.id;
+
+      const payment = await prisma.payment.findFirst({
+        where: { gatewayOrder: orderId }
+      });
+
+      if (payment && payment.status === 'PENDING') {
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: { status: 'SUCCESS', paidAt: new Date() }
+        });
+
+        await prisma.booking.update({
+          where: { id: payment.bookingId },
+          data: { status: 'APPROVED' }
+        });
+
+        if (payment.booking?.busPass) {
+          await prisma.busPass.update({
+            where: { id: payment.booking?.busPass.id },
+            data: { status: 'ACTIVE' }
+          });
+        }
+
+        logger.info(`Payment ${paymentId} verified via webhook for order ${orderId}`);
+      }
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (error: any) {
+    logger.error(`Webhook error: ${error.message}`);
+    return res.status(500).json({ success: false, message: 'Webhook processing failed' });
+  }
+}
+
+function validateRazorpaySignature(orderId: string, paymentId: string, signature: string): boolean {
+  const secret = env.RAZORPAY_KEY_SECRET;
+  const text = `${orderId}|${paymentId}`;
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(text)
+    .digest('hex');
+  
+  return crypto.timingSafeEqual(
+    Buffer.from(expectedSignature),
+    Buffer.from(signature)
+  );
 }

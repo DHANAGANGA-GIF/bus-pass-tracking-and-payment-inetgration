@@ -3,63 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-enum Role {
-  USER
-  ADMIN
-  SUPER_ADMIN
-  STAFF
-}
-
-enum PassDuration {
-  MONTHLY
-  QUARTERLY
-  HALF_YEARLY
-  YEARLY
-}
-
-enum PassStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  ACTIVE
-  EXPIRED
-  CANCELLED
-}
-
-enum PaymentStatus {
-  PENDING
-  SUCCESS
-  FAILED
-  REFUNDED
-}
-
-enum PaymentMethod {
-  UPI
-  CREDIT_CARD
-  DEBIT_CARD
-  NET_BANKING
-  WALLET
-  RAZORPAY
-  STRIPE
-}
-
-enum GovtIdType {
-  AADHAAR
-  PAN
-  PASSPORT
-  DRIVING_LICENSE
-  VOTER_ID
-}
-
-enum OtpType {
-  EMAIL_VERIFICATION
-  PHONE_VERIFICATION
-  PASSWORD_RESET
-  LOGIN
 }
 
 model User {
@@ -70,14 +15,14 @@ model User {
   phoneVerified     Boolean      @default(false)
   passwordHash      String
   fullName          String
-  role              Role         @default(USER)
+  role              String       @default("USER")
   profilePhotoUrl   String?
   address           String?
   district          String?
   state             String?
   pincode           String?
   emergencyContact  String?
-  govtIdType        GovtIdType?
+  govtIdType        String?
   govtIdNumber      String?
   studentIdNumber   String?
   employeeIdNumber  String?
@@ -108,7 +53,7 @@ model Route {
   routeCode       String      @unique
   source          String
   destination     String
-  viaStops        String[]
+  viaStops        String
   distanceKm      Float
   baseMonthlyFare Float
   isActive        Boolean     @default(true)
@@ -126,10 +71,10 @@ model Booking {
   id              String        @id @default(uuid())
   userId          String
   routeId         String
-  duration        PassDuration
+  duration        String
   passengerType   String        @default("GENERAL")
   fareAmount      Float
-  status          PassStatus    @default(PENDING)
+  status          String        @default("PENDING")
   startDate       DateTime
   expiryDate      DateTime
 
@@ -151,12 +96,12 @@ model BusPass {
   userId           String
   routeId          String
   bookingId        String        @unique
-  duration         PassDuration
+  duration         String
   startDate        DateTime
   expiryDate       DateTime
-  status           PassStatus    @default(PENDING)
+  status           String        @default("PENDING")
   fareAmount       Float
-  qrCodeData       String        @db.Text
+  qrCodeData       String
   barcodeData      String
   verificationHash String
   passengerName    String
@@ -182,8 +127,8 @@ model Payment {
   gatewayOrder    String
   amount          Float
   currency        String        @default("INR")
-  gateway         PaymentMethod
-  status          PaymentStatus @default(PENDING)
+  gateway         String
+  status          String        @default("PENDING")
   paidAt          DateTime?
   receiptUrl      String?
 
@@ -231,7 +176,7 @@ model Notification {
   title     String
   message   String
   isRead    Boolean  @default(false)
-  metadata  Json?
+  metadata  String?
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -243,9 +188,9 @@ model Notification {
 model OtpRecord {
   id          String   @id @default(uuid())
   userId      String?
-  identifier  String   // email or phone
+  identifier  String
   otpHash     String
-  type        OtpType
+  type        String
   expiresAt   DateTime
   isUsed      Boolean  @default(false)
   attempts    Int      @default(0)
@@ -291,7 +236,7 @@ model AuditLog {
   action    String
   ipAddress String?
   userAgent String?
-  details   Json?
+  details   String?
 
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
