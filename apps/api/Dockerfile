@@ -1,18 +1,20 @@
 FROM node:20-alpine AS builder
 
 WORKDIR /app
-COPY package*.json ./
-COPY tsconfig.json ./
+
+COPY package.json package-lock.json ./
+COPY apps/api/tsconfig.json ./
 RUN npm install --workspaces --if-present
 
-COPY src/ ./src/
-COPY prisma/ ./prisma/
-RUN npm run build
+COPY apps/api/src/ ./src/
+COPY apps/api/prisma/ ./prisma/
+RUN npm run build --workspace=@bus-pass/api
 
-FROM node:20-alpine
+FROM node:20-alpine AS runner
 
 WORKDIR /app
-COPY package*.json ./
+
+COPY package.json package-lock.json ./
 RUN npm install --omit=dev --workspaces --if-present
 
 COPY --from=builder /app/dist ./dist
