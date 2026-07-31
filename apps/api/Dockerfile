@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 COPY tsconfig.json ./
-RUN npm ci
+RUN npm install --workspaces --if-present
 
 COPY src/ ./src/
 COPY prisma/ ./prisma/
@@ -13,11 +13,10 @@ FROM node:20-alpine
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev --workspaces --if-present
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
-COPY .env.production ./
 
 EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=40s \

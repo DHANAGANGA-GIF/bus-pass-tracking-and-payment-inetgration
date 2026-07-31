@@ -6,7 +6,7 @@ COPY tsconfig.json ./
 COPY vite.config.ts ./
 COPY postcss.config.js ./
 COPY tailwind.config.js ./
-RUN npm ci
+RUN npm install --workspaces --if-present
 
 COPY src/ ./src/
 RUN npm run build
