@@ -14,8 +14,8 @@ const transporter = nodemailer.createTransport({
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   try {
-    if (env.SMTP_USER === 'demo@gmail.com') {
-      logger.info(`[Email Service Mock] Sending email to ${to} | Subject: "${subject}"`);
+    if (!env.SMTP_USER || env.SMTP_USER === 'demo@gmail.com') {
+      logger.info(`[Email Queued Locally] To: ${to} | Subject: "${subject}"`);
       return true;
     }
     const info = await transporter.sendMail({

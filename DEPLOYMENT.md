@@ -1,35 +1,36 @@
 # 🚀 BusPass Pro — Enterprise Deployment Guide
 
-This document contains step-by-step instructions for deploying the **BusPass Pro** monorepo to production environments across **Railway**, **Vercel**, and **Docker / Kubernetes**.
+This document contains step-by-step instructions for deploying the **BusPass Pro** monorepo to production environments across **Render**, **Vercel**, and **Docker / Kubernetes**.
 
 ---
 
 ## 🏗️ Architecture Overview
 
 - **Frontend**: React + Vite + Tailwind CSS (`apps/web`) → Static SPA deployed to Vercel or Served via Nginx.
-- **Backend API**: Express.js + Socket.IO + Prisma ORM (`apps/api`) → Node.js container deployed to Railway or Docker.
-- **Database**: PostgreSQL (`buspass-db`).
-- **Cache**: Redis (`buspass-redis`).
+- **Backend API**: Express.js + Socket.IO + Prisma ORM (`apps/api`) → Node.js container deployed to Render or Docker.
+- **Database**: PostgreSQL (`Neon`).
+- **Cache**: Redis (`Upstash`).
 - **Shared Utilities**: TypeScript contracts & Zod schemas (`packages/shared`).
 
 ---
 
-## 🟢 Option 1: Railway Deployment (Backend + Database + Redis)
+## 🟢 Option 1: Render Deployment (Backend)
 
-### Step 1: Create a Railway Project
-1. Log in to [Railway.app](https://railway.app).
-2. Click **New Project** → **Deploy from GitHub repo**.
+### Step 1: Create a Render Web Service
+1. Log in to [Render.com](https://render.com).
+2. Click **New** → **Blueprint**.
 3. Select this repository (`bus-pass-tracking-and-payment-inetgration`).
+4. Render will automatically detect the `render.yaml` and provision the web service.
 
 ### Step 2: Provision Infrastructure
-1. Add **PostgreSQL** database service (`buspass-db`).
-2. Add **Redis** cache service (`buspass-redis`).
+1. Create a **PostgreSQL** database on [Neon.tech](https://neon.tech) and get the connection string.
+2. Create a **Redis** instance on [Upstash](https://upstash.com) and get the connection string.
+3. Add these credentials to the Render environment variables for your Web Service.
 
 ### Step 3: Configure API Service
-1. Point service root directory to repository root.
-2. Select **Dockerfile** path: `Dockerfile.api`.
-3. Set environment variables (refer to `ENVIRONMENT.md`).
-4. Set Health Check path: `/health` (Port 5000).
+1. Ensure the Web Service is using the `Dockerfile.api`.
+2. Set environment variables (refer to `ENVIRONMENT.md`).
+3. Set Health Check path: `/health` (Port 5000).
 
 ---
 
@@ -47,8 +48,8 @@ This document contains step-by-step instructions for deploying the **BusPass Pro
 ### Step 3: Environment Variables
 Add the following in Vercel settings:
 ```env
-VITE_API_URL=https://your-api-domain.up.railway.app/api
-VITE_SOCKET_URL=https://your-api-domain.up.railway.app
+VITE_API_URL=https://your-api-domain.onrender.com/api
+VITE_SOCKET_URL=https://your-api-domain.onrender.com
 VITE_APP_NAME=BusPass Pro
 ```
 

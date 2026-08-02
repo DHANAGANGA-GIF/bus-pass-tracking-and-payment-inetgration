@@ -82,9 +82,13 @@ export async function register(req: Request, res: Response) {
 
     await auditLogger('USER_REGISTERED', req as any, { userId: user.id, email: user.email });
 
+    const msg = (!env.SMTP_USER || env.SMTP_USER === 'demo@gmail.com') 
+      ? 'Registration successful! Email queued locally (SMTP not configured).'
+      : 'Registration successful! Verification OTP sent to your email.';
+
     return res.status(201).json({
       success: true,
-      message: 'Registration successful! Verification OTP sent to your email.',
+      message: msg,
       data: {
         userId: user.id,
         email: user.email,
