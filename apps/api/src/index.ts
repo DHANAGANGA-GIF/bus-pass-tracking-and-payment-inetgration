@@ -11,6 +11,8 @@ import { initRedis } from './services/redis.js';
 import { initSentry } from './services/sentry.js';
 import { startCronJobs } from './services/cron.js';
 
+import { ensureDatabaseSeeded } from './services/dbSeed.js';
+
 const app = express();
 const server = createServer(app);
 
@@ -29,7 +31,13 @@ app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || env.NODE_ENV === 'development') {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        env.NODE_ENV === 'development' ||
+        origin.endsWith('.vercel.app') ||
+        origin.includes('vercel.app')
+      ) {
         callback(null, true);
       } else {
         logger.warn(`[CORS] Blocked request from origin: ${origin}`);
@@ -77,6 +85,7 @@ server.listen(PORT, () => {
   logger.info(`⚡ ENVIRONMENT: ${env.NODE_ENV}`);
   logger.info(`🔗 API ENDPOINT: http://localhost:${PORT}/api`);
   logger.info(`=======================================================`);
+  ensureDatabaseSeeded();
 });
 
 process.on('SIGTERM', () => {
