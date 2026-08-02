@@ -9,12 +9,12 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL
         sync: false
-      - key: PORT
-        value: 5000
       - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET

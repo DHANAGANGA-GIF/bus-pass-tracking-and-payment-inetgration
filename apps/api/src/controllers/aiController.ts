@@ -63,7 +63,8 @@ export async function handleAiAssistantQuery(req: Request, res: Response) {
     });
   } catch (error: any) {
     console.error('AI Controller error:', error);
-    const fallbackMsg = generateSmartAssistantFallback(prompt);
+    const userPrompt = req.body?.prompt || '';
+    const fallbackMsg = generateSmartAssistantFallback(typeof userPrompt === 'string' ? userPrompt : '');
     return res.json({
       success: true,
       data: {

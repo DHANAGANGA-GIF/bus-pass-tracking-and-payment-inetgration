@@ -4,10 +4,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const envSchema = z.object({
-  PORT: z.string().default('5000'),
+  PORT: z.string().default('10000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  DATABASE_URL: z.string().default('postgresql://postgres:postgres@localhost:5432/buspass?schema=public'),
-  REDIS_URL: z.string().default('redis://localhost:6379'),
+  DATABASE_URL: z.string().default('file:./dev.db'),
+  REDIS_URL: z.string().optional(),
   JWT_ACCESS_SECRET: z.string().min(16, 'JWT_ACCESS_SECRET must be at least 16 characters').default('default_dev_jwt_access_secret_key_32_bytes_long'),
   JWT_REFRESH_SECRET: z.string().min(16, 'JWT_REFRESH_SECRET must be at least 16 characters').default('default_dev_jwt_refresh_secret_key_32_bytes_long'),
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),

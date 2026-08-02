@@ -53,6 +53,10 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Root and health routes (must be before router)
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'OK', name: 'BusPass Pro API', version: '1.0.0' });
+});
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'BusPass API Server is healthy and running.' });
 });
@@ -66,7 +70,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-const PORT = parseInt(env.PORT, 10) || 5000;
+const PORT = parseInt(process.env.PORT || env.PORT, 10) || 10000;
 server.listen(PORT, () => {
   logger.info(`=======================================================`);
   logger.info(`🚌 BUS PASS PLATFORM API RUNNING ON PORT ${PORT}`);
