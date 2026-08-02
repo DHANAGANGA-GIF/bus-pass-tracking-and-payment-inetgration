@@ -7,23 +7,29 @@ import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
 import routes from './routes/index.js';
 import { initSocketIO } from './socket/index.js';
+import { initRedis } from './services/redis.js';
+import { initSentry } from './services/sentry.js';
+import { startCronJobs } from './services/cron.js';
 
 const app = express();
 const server = createServer(app);
 
+// Initialize Services
+initSentry();
+initRedis();
+startCronJobs();
 initSocketIO(server);
 
-// Build allowed origins from CORS_ORIGIN env var (comma-separated) or FRONTEND_URL
+// CORS setup
 const allowedOrigins: string[] = env.CORS_ORIGIN
   ? env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
-  : [env.FRONTEND_URL, 'http://localhost:3000', 'http://localhost:5000'];
+  : [env.FRONTEND_URL, 'http://localhost:3000', 'http://localhost:5000', 'http://localhost:5173'];
 
 app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow non-browser requests (e.g., curl, Postman, server-to-server) and allowed origins
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin) || env.NODE_ENV === 'development') {
         callback(null, true);
       } else {
         logger.warn(`[CORS] Blocked request from origin: ${origin}`);
@@ -36,8 +42,8 @@ app.use(
 );
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 mins
-  max: 300, // Limit each IP to 300 requests per window
+  windowMs: 15 * 60 * 1000,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests from this IP, please try again after 15 minutes.' }
@@ -47,6 +53,9 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', message: 'BusPass API Server is healthy and running.' });
+});
 app.use('/api', routes);
 
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

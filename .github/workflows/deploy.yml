@@ -1,0 +1,23 @@
+name: Production Deployment Verification
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  verify-deployment:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build Validation
+        run: |
+          npm ci
+          npm run build

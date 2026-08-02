@@ -98,7 +98,8 @@
   }
 }
 
-/* Fix for iOS viewport */n@supports (-webkit-touch-callout: none) {
+/* Fix for iOS viewport */
+@supports (-webkit-touch-callout: none) {
   html {
     height: -webkit-fill-available;
   }
@@ -106,6 +107,7 @@
     min-height: -webkit-fill-available;
   }
 }
+
 
 /* Smooth scrolling on mobile */
 html {

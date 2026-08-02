@@ -212,3 +212,153 @@ export async function verifyQrCode(req: Request, res: Response) {
     return res.status(500).json({ success: false, message: error.message });
   }
 }
+
+// ─── Stops CRUD ──────────────────────────────────────────────
+export async function getAllStops(req: Request, res: Response) {
+  try {
+    const stops = await prisma.stop.findMany({ orderBy: { name: 'asc' } });
+    return res.json({ success: true, data: stops });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+export async function createStop(req: Request, res: Response) {
+  try {
+    const { name, code, location, latitude, longitude } = req.body;
+    const stop = await prisma.stop.create({
+      data: { name, code, location, latitude: latitude ? parseFloat(latitude) : null, longitude: longitude ? parseFloat(longitude) : null }
+    });
+    return res.status(201).json({ success: true, data: stop });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+export async function updateStop(req: Request, res: Response) {
+  try {
+    const id = req.params.id as string;
+    const stop = await prisma.stop.update({ where: { id }, data: req.body });
+    return res.json({ success: true, data: stop });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+export async function deleteStop(req: Request, res: Response) {
+  try {
+    const id = req.params.id as string;
+    await prisma.stop.delete({ where: { id } });
+    return res.json({ success: true, message: 'Stop deleted successfully.' });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+// ─── Drivers CRUD ─────────────────────────────────────────────
+export async function getAllDrivers(req: Request, res: Response) {
+  try {
+    const drivers = await prisma.driver.findMany({ orderBy: { fullName: 'asc' } });
+    return res.json({ success: true, data: drivers });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+export async function createDriver(req: Request, res: Response) {
+  try {
+    const { fullName, licenseNumber, phoneNumber, address } = req.body;
+    const driver = await prisma.driver.create({
+      data: { fullName, licenseNumber, phoneNumber, address }
+    });
+    return res.status(201).json({ success: true, data: driver });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+export async function updateDriver(req: Request, res: Response) {
+  try {
+    const id = req.params.id as string;
+    const driver = await prisma.driver.update({ where: { id }, data: req.body });
+    return res.json({ success: true, data: driver });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+export async function deleteDriver(req: Request, res: Response) {
+  try {
+    const id = req.params.id as string;
+    await prisma.driver.delete({ where: { id } });
+    return res.json({ success: true, message: 'Driver deleted successfully.' });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+// ─── Buses CRUD ───────────────────────────────────────────────
+export async function getAllBuses(req: Request, res: Response) {
+  try {
+    const buses = await prisma.bus.findMany({
+      include: { driver: true },
+      orderBy: { busNumber: 'asc' }
+    });
+    return res.json({ success: true, data: buses });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+export async function createBus(req: Request, res: Response) {
+  try {
+    const { busNumber, registration, capacity, busType, driverId, routeId } = req.body;
+    const bus = await prisma.bus.create({
+      data: { busNumber, registration, capacity: capacity ? parseInt(capacity) : 40, busType, driverId, routeId }
+    });
+    return res.status(201).json({ success: true, data: bus });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+export async function updateBus(req: Request, res: Response) {
+  try {
+    const id = req.params.id as string;
+    const bus = await prisma.bus.update({ where: { id }, data: req.body });
+    return res.json({ success: true, data: bus });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+export async function deleteBus(req: Request, res: Response) {
+  try {
+    const id = req.params.id as string;
+    await prisma.bus.delete({ where: { id } });
+    return res.json({ success: true, message: 'Bus deleted successfully.' });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+// ─── Export Endpoints ─────────────────────────────────────────
+export async function exportPassesCsv(req: Request, res: Response) {
+  try {
+    const passes = await prisma.busPass.findMany({
+      include: { user: true, route: true }
+    });
+
+    let csv = 'Pass Number,Passenger Name,Email,Phone,Route Code,Duration,Status,Fare,Expiry Date\n';
+    passes.forEach((p) => {
+      csv += `"${p.passNumber}","${p.passengerName}","${p.user.email}","${p.user.phoneNumber}","${p.route.routeCode}","${p.duration}","${p.status}",${p.fareAmount},"${p.expiryDate.toISOString()}"\n`;
+    });
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=bus_passes.csv');
+    return res.status(200).send(csv);
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+

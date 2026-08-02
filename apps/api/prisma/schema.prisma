@@ -268,3 +268,51 @@ model SmsLog {
 
   createdAt DateTime @default(now())
 }
+
+model Stop {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String   @unique
+  location  String?
+  latitude  Float?
+  longitude Float?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Driver {
+  id            String   @id @default(uuid())
+  fullName      String
+  licenseNumber String   @unique
+  phoneNumber   String   @unique
+  address       String?
+  status        String   @default("ACTIVE")
+  buses         Bus[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Bus {
+  id           String   @id @default(uuid())
+  busNumber    String   @unique
+  registration String   @unique
+  capacity     Int      @default(40)
+  busType      String   @default("EXPRESS")
+  driverId     String?
+  driver       Driver?  @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  routeId      String?
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+

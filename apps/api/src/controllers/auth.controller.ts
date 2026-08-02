@@ -393,42 +393,42 @@ export async function getCurrentUser(req: AuthenticatedRequest, res: Response) {
 }
 
 // Google OAuth Routes
-export const googleLogin = passport.authenticate('google', { scope: ['profile', 'email'] });
+export const googleLogin = (req: Request, res: Response, next: NextFunction) => {
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    return res.status(501).json({
+      success: false,
+      message: 'Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.'
+    });
+  }
+  return passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+};
 
 export const googleCallback = (req: Request, res: Response, next: NextFunction) => {
-  passport.authenticate('google', { session: false }, (err: any, user: any, info: any) => {
-    if (err) {
-      return res.redirect(`${env.FRONTEND_URL}/login?error=oauth_error`);
-    }
-    if (!user) {
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    return res.redirect(`${env.FRONTEND_URL}/login?error=oauth_not_configured`);
+  }
+  passport.authenticate('google', { session: false }, (err: any, user: any) => {
+    if (err || !user) {
       return res.redirect(`${env.FRONTEND_URL}/login?error=oauth_failed`);
     }
-    
-    // Set tokens in HTTP-only cookies (secure in production, lax sameSite for cross-origin redirect)
     res.cookie('accessToken', user.accessToken, {
       httpOnly: true,
       secure: env.NODE_ENV === 'production',
       sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 15 * 60 * 1000 // 15 minutes
+      maxAge: 15 * 60 * 1000
     });
-    
     res.cookie('refreshToken', user.refreshToken, {
       httpOnly: true,
       secure: env.NODE_ENV === 'production',
       sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
-    
-    // Redirect to frontend dashboard using absolute URL
-    // Tokens are passed as URL params (short-lived); the SPA stores them in localStorage and
-    // immediately cleans the URL. This is necessary for cross-domain OAuth flows.
     res.redirect(
       `${env.FRONTEND_URL}/dashboard?accessToken=${encodeURIComponent(user.accessToken)}&refreshToken=${encodeURIComponent(user.refreshToken)}`
     );
   })(req, res, next);
 };
 
-// LinkedIn OAuth (placeholder for future)
 export const linkedinLogin = (req: Request, res: Response) => {
   res.status(501).json({ success: false, message: 'LinkedIn OAuth not implemented yet.' });
 };

@@ -102,6 +102,38 @@ export const PassApprovalSchema = z.object({
   rejectionReason: z.string().optional()
 });
 
+// Admin CRUD Schemas
+export const CreateStopSchema = z.object({
+  name: z.string().min(2, 'Stop name required'),
+  code: z.string().min(2, 'Stop code required'),
+  location: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  isActive: z.boolean().default(true)
+});
+
+export const CreateDriverSchema = z.object({
+  fullName: z.string().min(2, 'Full name required'),
+  licenseNumber: z.string().min(3, 'License number required'),
+  phoneNumber: z.string().regex(/^[6-9]\d{9}$/, 'Must be a valid 10-digit Indian phone number'),
+  address: z.string().optional(),
+  status: z.enum(['ACTIVE', 'ON_LEAVE', 'INACTIVE']).default('ACTIVE')
+});
+
+export const CreateBusSchema = z.object({
+  busNumber: z.string().min(2, 'Bus number required'),
+  registration: z.string().min(2, 'Registration required'),
+  capacity: z.number().positive().default(40),
+  busType: z.enum(['EXPRESS', 'AC', 'REGULAR']).default('EXPRESS'),
+  driverId: z.string().optional(),
+  routeId: z.string().optional(),
+  status: z.enum(['ACTIVE', 'MAINTENANCE', 'INACTIVE']).default('ACTIVE')
+});
+
+export const ForgotPasswordSchema = z.object({
+  email: z.string().email('Invalid email address')
+});
+
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type SendOtpInput = z.infer<typeof SendOtpSchema>;
@@ -113,3 +145,8 @@ export type CreateRouteInput = z.infer<typeof CreateRouteSchema>;
 export type CreateBookingInput = z.infer<typeof CreateBookingSchema>;
 export type InitializePaymentInput = z.infer<typeof InitializePaymentSchema>;
 export type VerifyPaymentInput = z.infer<typeof VerifyPaymentSchema>;
+export type CreateStopInput = z.infer<typeof CreateStopSchema>;
+export type CreateDriverInput = z.infer<typeof CreateDriverSchema>;
+export type CreateBusInput = z.infer<typeof CreateBusSchema>;
+export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
+

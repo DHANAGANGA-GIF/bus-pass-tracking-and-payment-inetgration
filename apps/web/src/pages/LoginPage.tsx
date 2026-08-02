@@ -107,10 +107,17 @@ export const LoginPage: React.FC = () => {
         
         {/* Google Sign In Link */}
         <div className="mt-6 text-center">
-          <a href="/api/auth/google" className="glass-btn-secondary w-full py-3 flex items-center justify-center gap-2 text-sm">
-            <LogIn className="w-4 h-4 text-blue-400" />
-            Sign in with Google
-          </a>
+          {import.meta.env.VITE_GOOGLE_CLIENT_ID ? (
+            <a href={`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}/api/auth/google`} className="glass-btn-secondary w-full py-3 flex items-center justify-center gap-2 text-sm">
+              <LogIn className="w-4 h-4 text-blue-400" />
+              Sign in with Google
+            </a>
+          ) : (
+            <button disabled className="glass-btn-secondary w-full py-3 flex items-center justify-center gap-2 text-sm opacity-50 cursor-not-allowed" title="Available after production setup.">
+              <LogIn className="w-4 h-4 text-slate-400" />
+              Available after production setup
+            </button>
+          )}
         </div>
         
         {/* Demo Account Banner */}

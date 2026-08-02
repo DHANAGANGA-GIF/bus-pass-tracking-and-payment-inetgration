@@ -1,16 +1,10 @@
 {
   "version": 2,
-  "buildCommand": "cd apps/web && npm run build",
+  "buildCommand": "npm run build --workspace=@bus-pass/shared && npm run build --workspace=@bus-pass/web",
   "outputDirectory": "apps/web/dist",
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
-  "env": {
-    "VITE_APP_NAME": "BusPass Pro"
-  },
   "headers": [
     {
       "source": "/(.*)",

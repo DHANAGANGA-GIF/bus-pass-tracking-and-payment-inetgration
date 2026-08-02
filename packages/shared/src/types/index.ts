@@ -134,8 +134,46 @@ export interface ApiResponse<T = unknown> {
   };
 }
 
+export interface Stop {
+  id: string;
+  name: string;
+  code: string;
+  location?: string;
+  latitude?: number;
+  longitude?: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Driver {
+  id: string;
+  fullName: string;
+  licenseNumber: string;
+  phoneNumber: string;
+  address?: string;
+  status: 'ACTIVE' | 'ON_LEAVE' | 'INACTIVE';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Bus {
+  id: string;
+  busNumber: string;
+  registration: string;
+  capacity: number;
+  busType: 'EXPRESS' | 'AC' | 'REGULAR';
+  driverId?: string;
+  routeId?: string;
+  status: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
+  driver?: Driver;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   user: UserProfile;
 }
+

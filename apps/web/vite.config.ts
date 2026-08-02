@@ -6,35 +6,12 @@ import fs from 'node:fs';
 function hashPathResolver() {
   return {
     name: 'hash-path-resolver',
-    resolveId(source, importer) {
+    resolveId(source) {
       if (source === '@bus-pass/shared') {
+        const sharedSrc = path.resolve(__dirname, '../../packages/shared/src/index.ts');
+        if (fs.existsSync(sharedSrc)) return sharedSrc;
         const sharedDist = path.resolve(__dirname, '../../packages/shared/dist/index.js');
         if (fs.existsSync(sharedDist)) return sharedDist;
-      }
-
-      if (importer && (source.startsWith('./') || source.startsWith('../') || source.startsWith('@/'))) {
-        let baseDir = path.dirname(importer);
-        if (source.startsWith('@/')) {
-          baseDir = path.resolve(__dirname, 'src');
-          source = source.replace('@/', './');
-        }
-        const resolvedPath = path.resolve(baseDir, source);
-
-        const candidates = [
-          resolvedPath,
-          `${resolvedPath}.tsx`,
-          `${resolvedPath}.ts`,
-          `${resolvedPath}.jsx`,
-          `${resolvedPath}.js`,
-          path.join(resolvedPath, 'index.tsx'),
-          path.join(resolvedPath, 'index.ts')
-        ];
-
-        for (const candidate of candidates) {
-          if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-            return candidate;
-          }
-        }
       }
       return null;
     }
@@ -48,7 +25,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@bus-pass/shared': path.resolve(__dirname, '../../packages/shared/dist/index.js'),
+      '@bus-pass/shared': path.resolve(__dirname, '../../packages/shared/src/index.ts'),
       'react-transition-group': path.resolve(rootPath, 'node_modules/react-transition-group/esm/index.js'),
       'dom-helpers': path.resolve(rootPath, 'node_modules/dom-helpers/esm'),
       'react-smooth': path.resolve(rootPath, 'node_modules/react-smooth/es6/index.js')
